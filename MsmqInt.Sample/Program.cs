@@ -23,7 +23,7 @@ namespace MsmqInt.Sample
 
 
             //remote queu
-            testHost = "10.28.32.2";
+            testHost = "127.0.0.1";
             Msmq msmqRemote = new Msmq(testHost, testQueuName);
             msmqRemote.Init();
             msmqRemote.Send<string>("hello world");
