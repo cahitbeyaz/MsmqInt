@@ -47,7 +47,7 @@ namespace MsmqInt.Mq
             if (IsLocal)
             {
                 if (!QueueExists(ipAddressOrHostName, queuName, path2Queu))
-                        MessageQueue.Create(path2Queu);
+                    MessageQueue.Create(path2Queu);
             }
             messageQueu = new MessageQueue(path2Queu);
         }
@@ -62,26 +62,34 @@ namespace MsmqInt.Mq
             Message msg = messageQueu.Receive(receiveTimeout);
             return (T)msg.Body;
         }
-
         public void ReceiveAsync<T>(MqReceived<T> mqReceived)
         {
-            receiveEventHandler = (source, args) =>
+            try
             {
-                var queue = (MessageQueue)source;
-                using (Message msg = queue.EndPeek(args.AsyncResult))
+                receiveEventHandler = (source, args) =>
                 {
-                    queue.ReceiveById(msg.Id);
-                    T tMsg = (T)msg.Body;
-                    mqReceived(tMsg);
-                    
-                }
-                queue.BeginPeek();
-            };
+                    var queue = (MessageQueue)source;
+                    using (Message msg = queue.EndPeek(args.AsyncResult))
+                    {
+                        XmlMessageFormatter formatter = new XmlMessageFormatter(new Type[] { typeof(T) });
+                        msg.Formatter = formatter;
+                        queue.ReceiveById(msg.Id);
+                        T tMsg = (T)msg.Body;
+                        mqReceived(tMsg);
 
-            messageQueu.PeekCompleted += receiveEventHandler;
-            messageQueu.BeginPeek();
+                    }
+                    queue.BeginPeek();
+                };
+
+                messageQueu.PeekCompleted += receiveEventHandler;
+                messageQueu.BeginPeek();
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
-
 
 
         bool IsLocal
